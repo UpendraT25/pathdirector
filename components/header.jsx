@@ -30,7 +30,7 @@ const Header = async()=> {
       <nav className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href='/'>
           <Image 
-          src="/Logo.png"
+          src="/logo.png"
           alt="Pathdirector Logo"
           width={200}
           height={60}
