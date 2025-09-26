@@ -40,7 +40,7 @@ function OnboardingForm({industries}) {
 
   const onSubmit=async(values)=>{
     try {
-      const formattedIndustry=`${values.Industry}-${values.subIndustry
+      const formattedIndustry=`${values.industry}-${values.subIndustry
         .toLowerCase()
         .replace(/ /g,"-")
       }`;
@@ -50,7 +50,7 @@ function OnboardingForm({industries}) {
         industry:formattedIndustry,
       })
     } catch (error) {
-      console.log("onboarding error",error)
+      console.error("onboarding error",error)
     }
   };
 
