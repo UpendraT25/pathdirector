@@ -51,7 +51,8 @@ export default function CoverLetterGenerator() {
 
   const onSubmit = async (data) => {
     try {
-      await generateLetterFn(data);
+      const a=await generateLetterFn(data);
+      console.log(a);
     } catch (error) {
       toast.error(error.message || "Failed to generate cover letter");
     }

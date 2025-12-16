@@ -45,6 +45,7 @@ export async function generateCoverLetter(data) {
   try {
     const result = await model.generateContent(prompt);
     const content = result.response.text().trim();
+    return content;
 
     const coverLetter = await db.coverLetter.create({
       data: {
@@ -60,7 +61,7 @@ export async function generateCoverLetter(data) {
     return coverLetter;
   } catch (error) {
     console.error("Error generating cover letter:", error.message);
-    throw new Error("Failed to generate cover letter");
+    throw new Error(error.message||"Failed to generate cover letter");
   }
 }
 
