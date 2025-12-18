@@ -2,37 +2,58 @@
 
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from "groq-sdk";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
+});
+
+const MODEL = "llama-3.3-70b-versatile"; // or another Groq text model
 
 export const generateAIInsights = async (industry) => {
   const prompt = `
-          Analyze the current state of the ${industry} industry and provide insights in ONLY the following JSON format without any additional notes or explanations:
-          {
-            "salaryRanges": [
-              { "role": "string", "min": number, "max": number, "median": number, "location": "string" }
-            ],
-            "growthRate": number,
-            "demandLevel": "HIGH" | "MEDIUM" | "LOW",
-            "topSkills": ["skill1", "skill2"],
-            "marketOutlook": "POSITIVE" | "NEUTRAL" | "NEGATIVE",
-            "keyTrends": ["trend1", "trend2"],
-            "recommendedSkills": ["skill1", "skill2"]
-          }
-          
-          IMPORTANT: Return ONLY the JSON. No additional text, notes, or markdown formatting.
-          Include at least 5 common roles for salary ranges.
-          Growth rate should be a percentage.
-          Include at least 5 skills and trends.
-        `;
+    Analyze the current state of the ${industry} industry and provide insights in ONLY the following JSON format without any additional notes or explanations:
+    {
+      "salaryRanges": [
+        { "role": "string", "min": number, "max": number, "median": number, "location": "string" }
+      ],
+      "growthRate": number,
+      "demandLevel": "HIGH" | "MEDIUM" | "LOW",
+      "topSkills": ["skill1", "skill2"],
+      "marketOutlook": "POSITIVE" | "NEUTRAL" | "NEGATIVE",
+      "keyTrends": ["trend1", "trend2"],
+      "recommendedSkills": ["skill1", "skill2"]
+    }
+    
+    IMPORTANT:
+    - Return ONLY the JSON. No additional text, notes, or markdown formatting.
+    - Include at least 5 common roles for salary ranges.
+    - Growth rate should be a percentage number (not a string with %).
+    - Include at least 5 skills and 5 trends.
+  `;
 
-  const result = await model.generateContent(prompt);
-  const response = result.response;
-  const text = response.text();
-  const cleanedText = text.replace(/```(?:json)?\n?/g, "").trim();
+  const completion = await groq.chat.completions.create({
+    model: MODEL,
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are an expert labor market analyst. Always respond with STRICT, valid JSON that matches the requested schema.",
+      },
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+    temperature: 0.4,
+  });
+
+  const raw = completion.choices?.[0]?.message?.content ?? "";
+  // Defensive cleanup in case the model adds code fences
+  const cleanedText = raw.replace(/``````$/g, "").trim();
+
   console.log(cleanedText);
+
   return JSON.parse(cleanedText);
 };
 

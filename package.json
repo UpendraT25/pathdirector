@@ -29,6 +29,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "groq-sdk": "^0.37.0",
     "html2pdf.js": "^0.9.3",
     "ingest": "^1.0.0",
     "inngest": "^3.40.1",

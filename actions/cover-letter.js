@@ -2,10 +2,14 @@
 
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from "groq-sdk";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
+});
+
+// choose a Groq model, e.g. Llama 3.3 70B Versatile
+const MODEL = "llama-3.3-70b-versatile";
 
 export async function generateCoverLetter(data) {
   const { userId } = await auth();
@@ -16,10 +20,11 @@ export async function generateCoverLetter(data) {
   });
 
   if (!user) throw new Error("User not found");
+
   const prompt = `
     Write a professional cover letter for a ${data.jobTitle} position at ${
-    data.companyName
-  }.
+      data.companyName
+    }.
     
     About the candidate:
     - Industry: ${user.industry}
@@ -43,9 +48,25 @@ export async function generateCoverLetter(data) {
   `;
 
   try {
-    const result = await model.generateContent(prompt);
-    const content = result.response.text().trim();
-    return content;
+    const completion = await groq.chat.completions.create({
+      model: MODEL,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are an expert career coach writing tailored, professional cover letters in markdown.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      temperature: 0.7,
+    });
+
+    const content =
+      completion.choices?.[0]?.message?.content?.trim() ??
+      "Failed to generate cover letter.";
 
     const coverLetter = await db.coverLetter.create({
       data: {
@@ -60,8 +81,9 @@ export async function generateCoverLetter(data) {
 
     return coverLetter;
   } catch (error) {
-    console.error("Error generating cover letter:", error.message);
-    throw new Error(error.message||"Failed to generate cover letter");
+    console.error("Error generating cover letter:", error);
+    // Groq errors are usually Error objects; keep fallback message
+    throw new Error(error?.message || "Failed to generate cover letter");
   }
 }
 
